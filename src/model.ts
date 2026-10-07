@@ -1,3 +1,4 @@
+import { validatePhotos, type HostedPhoto, type DraftPhoto } from './photos/model';
 export const themes = {
   craft: '工程与创造',
   growth: '探索与成长',
@@ -32,11 +33,13 @@ export interface Exhibit {
   noteToSelf?: string;
   evidence: { label: string; url?: string }[];
   tags: string[];
+  photos?: HostedPhoto[];
+  photoCover?: boolean;
   createdAt: string;
   updatedAt: string;
 }
 export interface MuseumBackup {
-  schemaVersion: 1;
+  schemaVersion: 2;
   exportedAt: string;
   owner: { name: string; introduction: string };
   featuredIds: string[];
@@ -47,6 +50,7 @@ export interface Draft {
   featured: boolean;
   replaces: string;
   editingId?: string;
+  photos?: DraftPhoto[];
 }
 export type Mode = 'demo' | 'personal';
 export interface Preferences {
@@ -55,7 +59,7 @@ export interface Preferences {
 }
 export function emptyMuseum(): MuseumBackup {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     exportedAt: new Date().toISOString(),
     owner: { name: 'remy', introduction: '这里收藏着我做成的事，也收藏着它们让我成为的自己。' },
     featuredIds: [],
@@ -200,6 +204,14 @@ export function validateExhibit(value: unknown): Exhibit {
     meaning: str(x.meaning, '意义', 1000),
     noteToSelf: str(x.noteToSelf, '给自己的话', 300),
     evidence,
+    photos: validatePhotos(x.photos, id),
+    photoCover:
+      x.photoCover === undefined
+        ? true
+        : (() => {
+            if (typeof x.photoCover !== 'boolean') throw new Error('照片封面设置必须为布尔值。');
+            return x.photoCover;
+          })(),
     tags: list(x.tags, '标签', 5).map((v) => str(v, '标签', 12, true)),
     createdAt: timestamp(x.createdAt, '创建时间'),
     updatedAt: timestamp(x.updatedAt, '修改时间'),
@@ -207,8 +219,9 @@ export function validateExhibit(value: unknown): Exhibit {
 }
 export function validateBackup(value: unknown): MuseumBackup {
   const x = object(value, '备份');
-  if (x.schemaVersion !== 1)
-    throw new Error('不支持此备份版本，请使用 schemaVersion 为 1 的来时路备份。');
+  // v1 旧馆藏只增加空照片字段，不改变既有故事；v2 防止旧程序静默丢弃图片信息。
+  if (x.schemaVersion !== 1 && x.schemaVersion !== 2)
+    throw new Error('不支持此备份版本，请使用版本 1 或 2 的来时路备份。');
   const owner = object(x.owner, '馆主设置');
   const exhibits = list(x.exhibits, '馆藏', 1000).map(validateExhibit);
   const ids = new Set(exhibits.map((e) => e.id));
@@ -219,7 +232,7 @@ export function validateBackup(value: unknown): MuseumBackup {
   if (new Set(featuredIds).size !== featuredIds.length || featuredIds.some((id) => !ids.has(id)))
     throw new Error('精选引用必须唯一，并指向已有展品。');
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     exportedAt: timestamp(x.exportedAt, '导出时间'),
     owner: {
       name: str(owner.name, '馆主名', 40, true),

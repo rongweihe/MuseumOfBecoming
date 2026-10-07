@@ -116,7 +116,7 @@ const stories: Omit<Exhibit, 'id' | 'createdAt' | 'updatedAt' | 'evidence' | 'ta
   },
 ];
 export const demoMuseum: MuseumBackup = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   exportedAt: '2026-10-01T00:00:00.000Z',
   owner: { name: 'remy', introduction: '有些路，当时只顾着走。\n回头才发现，它们早已留下了光。' },
   exhibits: stories.map((s, i) => ({
