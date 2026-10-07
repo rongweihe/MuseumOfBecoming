@@ -1,4 +1,6 @@
-# 来时路 MVP 验收记录
+# 来时路 MVP v1 验收记录
+
+后续图片功能的实现与验收见 [收藏照片功能](photos.md)，本页保留首版验收记录。
 
 验收日期：2026-10-07（Asia/Shanghai）。运行环境：Node.js 22、Chrome、React + TypeScript + Vite。所有验收记录与截图中的个人馆藏均为测试输入，不是 remy 的真实故事。
 
