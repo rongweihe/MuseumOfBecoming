@@ -1,4 +1,5 @@
 import { Artifact } from './Artifact';
+import { PhotoView } from '../photos/PhotoView';
 import { themes, formatDate, type Exhibit } from '../model';
 export function Card({
   exhibit: e,
@@ -17,7 +18,11 @@ export function Card({
     >
       <div className={`card-scene scene-${e.palette}`}>
         <span className="catalog-number">NO. {String(index + 1).padStart(3, '0')}</span>
-        <Artifact kind={e.artifact} palette={e.palette} />
+        {e.photoCover !== false && e.photos?.[0] ? (
+          <PhotoView photo={e.photos[0]} className="card-photo" />
+        ) : (
+          <Artifact kind={e.artifact} palette={e.palette} />
+        )}
         <span className="approach">
           走近看看 <span>↗</span>
         </span>
