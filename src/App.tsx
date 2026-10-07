@@ -19,6 +19,9 @@ import { Card } from './components/Card';
 import { Modal } from './components/Modal';
 import { ExhibitForm } from './components/ExhibitForm';
 import { Settings } from './components/Settings';
+import { usePhotoHosting } from './photos/Hosting';
+import { PhotoGallery } from './photos/PhotoView';
+import { MAX_PHOTOS, type HostedPhoto } from './photos/model';
 import { demoMuseum } from './demo';
 import {
   emptyMuseum,
@@ -48,6 +51,8 @@ import {
 
 const currentRoute = () => location.hash.slice(1) || '/museum';
 export function App() {
+  const photoHosting = usePhotoHosting();
+  const operationLock = useRef(false);
   const [route, setRoute] = useState(currentRoute);
   const [museum, setMuseum] = useState<MuseumBackup>(emptyMuseum);
   const [preferences, setPreferences] = useState<Preferences>({ mode: 'demo', initialized: false });
@@ -127,6 +132,10 @@ export function App() {
     };
   }, []);
   function go(path: string, bypass = false) {
+    if (operationLock.current) {
+      setToast('正在处理照片和保存，请稍等片刻。');
+      return;
+    }
     if (isForm && draftRef.current && !bypass) {
       setLeaving(path);
       return;
@@ -141,6 +150,11 @@ export function App() {
     routeRef.current = route;
     const change = () => {
       const next = currentRoute();
+      if (operationLock.current) {
+        history.replaceState(null, '', `#${routeRef.current}`);
+        setToast('正在处理照片和保存，请稍等片刻。');
+        return;
+      }
       if (
         allowedPath.current !== next &&
         (routeRef.current === '/new' || routeRef.current.startsWith('/edit/')) &&
@@ -163,7 +177,7 @@ export function App() {
   useEffect(() => {
     const beforeUnload = (e: BeforeUnloadEvent) => {
       if (
-        draftRef.current &&
+        (draftRef.current || operationLock.current) &&
         (routeRef.current === '/new' || routeRef.current.startsWith('/edit/'))
       ) {
         e.preventDefault();
@@ -201,6 +215,10 @@ export function App() {
     setPreferences(nextPreferences);
   }
   async function changeMode(mode: Mode, bypass = false): Promise<boolean> {
+    if (operationLock.current) {
+      setToast('正在处理照片和保存，请稍等片刻。');
+      return false;
+    }
     // 编辑中的模式切换也先保存或丢弃草稿，避免展馆切换绕过离开保护。
     if (isForm && draftRef.current && !bypass) {
       setPendingMode(mode);
@@ -292,36 +310,72 @@ export function App() {
     setDraft(undefined);
     draftRef.current = undefined;
   }
-  async function saveExhibit(next: Draft) {
+  async function saveExhibit(next: Draft, progress: (draft: Draft, status: string) => void) {
+    if (operationLock.current) throw new Error('正在保存，请不要重复提交。');
+    operationLock.current = true;
     clearTimeout(draftTimer.current);
     await finishDraftWrites();
-    let featuredIds = museum.featuredIds.filter((id) => id !== next.exhibit.id);
-    if (next.featured) {
-      if (featuredIds.length >= 3) {
-        if (!featuredIds.includes(next.replaces)) throw new Error('请选择要替换的精选藏品。');
-        featuredIds = featuredIds.filter((id) => id !== next.replaces);
-      }
-      featuredIds.push(next.exhibit.id);
-    }
-    const exists = museum.exhibits.some((e) => e.id === next.exhibit.id);
-    const exhibits = exists
-      ? museum.exhibits.map((e) => (e.id === next.exhibit.id ? next.exhibit : e))
-      : [...museum.exhibits, next.exhibit];
     try {
-      await commit(
-        { ...museum, featuredIds, exhibits },
-        { mode: 'personal', initialized: true },
-        true,
-      );
-    } catch {
-      throw new Error('未能保存到浏览器。输入已保留，请重试；也可以下载当前草稿。');
+      let featuredIds = museum.featuredIds.filter((id) => id !== next.exhibit.id);
+      if (next.featured) {
+        if (featuredIds.length >= 3) {
+          if (!featuredIds.includes(next.replaces)) throw new Error('请选择要替换的精选藏品。');
+          featuredIds = featuredIds.filter((id) => id !== next.replaces);
+        }
+        featuredIds.push(next.exhibit.id);
+      }
+      const exists = museum.exhibits.some((e) => e.id === next.exhibit.id);
+      if (!exists && museum.exhibits.length >= 1000)
+        throw new Error('馆藏已达到 1000 件上限，请先整理馆藏。');
+      const photos = [...(next.photos ?? next.exhibit.photos ?? [])];
+      if (photos.length > MAX_PHOTOS || new Set(photos.map((p) => p.hash)).size !== photos.length)
+        throw new Error('照片数量超限或包含重复图片。');
+      if (photos.some((p) => p.kind === 'pending') && !photoHosting.connected)
+        throw new Error('请先连接图片仓库，再收入包含新照片的收藏。');
+      // GitHub 上传与本地馆藏无法跨系统原子提交：每张成功后先保存其引用，失败可接续。
+      for (let i = 0; i < photos.length; i++) {
+        const photo = photos[i];
+        if (photo.kind !== 'pending') continue;
+        progress({ ...next, photos: [...photos] }, `正在上传照片 ${i + 1} / ${photos.length}…`);
+        photos[i] = await photoHosting.client.upload(photo, next.exhibit.id);
+        next = { ...next, photos: [...photos] };
+        draftRef.current = next;
+        setDraft(next);
+        progress(next, `照片 ${i + 1} 已保存在仓库`);
+        if (!temporary) {
+          try {
+            await persistDraft(next);
+          } catch {
+            throw new Error(
+              '照片已上传，但本地草稿保存失败。请保留此页面并重试，或下载草稿留存图片引用。',
+            );
+          }
+        }
+      }
+      const saved = { ...next.exhibit, photos: photos as HostedPhoto[] };
+      const exhibits = exists
+        ? museum.exhibits.map((e) => (e.id === saved.id ? saved : e))
+        : [...museum.exhibits, saved];
+      progress(next, '正在收入馆藏…');
+      try {
+        await commit(
+          { ...museum, featuredIds, exhibits },
+          { mode: 'personal', initialized: true },
+          true,
+        );
+      } catch {
+        throw new Error('未能保存到浏览器。输入和图片引用已保留，请重试；也可以下载当前草稿。');
+      }
+      setDraft(undefined);
+      draftRef.current = undefined;
+      operationLock.current = false;
+      go(`/exhibit/${saved.id}`, true);
+      // 只有全部照片与正式记录提交成功才揭幕，编辑和失败均不播放庆祝。
+      if (!exists) setReveal(saved);
+      else setToast(temporary ? '修改保留在临时模式，请导出备份。' : '这个瞬间的修改已保存。');
+    } finally {
+      operationLock.current = false;
     }
-    setDraft(undefined);
-    draftRef.current = undefined;
-    go(`/exhibit/${next.exhibit.id}`, true);
-    // 只有提交成功的新建记录才揭幕；编辑和保存失败均不会播放庆祝。
-    if (!exists) setReveal(next.exhibit);
-    else setToast(temporary ? '修改保留在临时模式，请导出备份。' : '这个瞬间的修改已保存。');
   }
   function edit(e: Exhibit) {
     if (draft) {
@@ -778,6 +832,9 @@ export function App() {
             museum={museum}
             onDraft={onDraft}
             onSave={saveExhibit}
+            onProcessingChange={(value) => {
+              operationLock.current = value;
+            }}
             onLeave={() => go('/museum')}
             draftStatus={draftStatus}
           />
@@ -880,6 +937,7 @@ export function App() {
                     </section>
                   );
                 })}
+                <PhotoGallery photos={exhibit.photos || []} />
                 {exhibit.noteToSelf && (
                   <section className="letter">
                     <span className="eyebrow">TO MY PAST SELF</span>

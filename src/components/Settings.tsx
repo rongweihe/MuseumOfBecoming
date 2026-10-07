@@ -1,6 +1,7 @@
 import { useEffect, useState, type ChangeEvent } from 'react';
 import { Download, Upload, Database, Check, ArrowUpRight, BookOpen } from 'lucide-react';
 import { Modal } from './Modal';
+import { RepositoryConnection } from '../photos/Hosting';
 import { parseBackup, type MuseumBackup, type Mode } from '../model';
 export function Settings({
   museum,
@@ -189,6 +190,9 @@ export function Settings({
             </button>
           </div>
         </section>
+        <section className="settings-box photo-hosting-box">
+          <RepositoryConnection />
+        </section>
       </div>
       {error && (
         <p className="error-message" role="alert">
@@ -201,7 +205,7 @@ export function Settings({
         </p>
       )}
       <p className="privacy-note">
-        你的故事不会自动上传。这座展馆没有分析追踪，也没有在线 AI 服务。
+        文字故事保存在当前浏览器。只有你选择并保存的照片会上传到已连接的仓库。
       </p>
       {candidate && (
         <Modal title="恢复这份馆藏备份？" onClose={() => !busy && setCandidate(undefined)}>

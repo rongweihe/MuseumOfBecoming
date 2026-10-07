@@ -3047,3 +3047,401 @@ input[type='checkbox'] {
     font-size: 14px;
   }
 }
+
+/* 照片沿用纸张、铭牌和石绿边线，让真实影像与抽象藏品处于同一展览语境。 */
+.form-fields {
+  margin: 0;
+  min-width: 0;
+}
+.museum-photo {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+.photo-placeholder,
+.photo-unavailable {
+  display: flex;
+  background: #e8e5db;
+  align-items: center;
+  justify-content: center;
+  min-height: 140px;
+  width: 100%;
+}
+.photo-unavailable {
+  flex-direction: column;
+  gap: 9px;
+  color: #68645c;
+  text-align: center;
+  padding: 15px;
+  font-size: 13px;
+}
+.photo-unavailable small {
+  font-size: 11px;
+}
+.card-scene .card-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.card-scene:has(.card-photo) .catalog-number,
+.card-scene:has(.card-photo) .approach {
+  background: #fffcf6df;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: #393c30;
+}
+.preview-scene .preview-photo {
+  width: 100%;
+  height: 320px;
+  object-fit: cover;
+}
+.photo-description {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+.repository-connection h2 {
+  margin: 9px 0 12px;
+}
+.repository-connection > p {
+  font-size: 14px;
+  color: var(--muted);
+}
+.repository-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #eeeee3;
+  border: 1px solid #d4d8c7;
+  border-radius: 7px;
+  padding: 16px;
+  margin: 18px 0;
+}
+.repository-status > svg {
+  color: var(--green);
+}
+.repository-status > div {
+  flex: 1;
+  min-width: 0;
+}
+.repository-status strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.repository-status small {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.repository-status .secondary {
+  font-size: 12px;
+  padding: 9px 12px;
+  min-height: 38px;
+}
+.photo-fineprint {
+  font-size: 12px !important;
+  color: var(--muted);
+  line-height: 1.8;
+  margin: 10px 0 !important;
+}
+.photo-hosting-box {
+  grid-column: 1/-1;
+}
+.repository-fields {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 12px;
+}
+.repository-form fieldset {
+  margin: 0;
+  min-width: 0;
+}
+.token-help {
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #f1eee5;
+  margin-top: 20px;
+  font-size: 13px;
+}
+.token-help summary {
+  cursor: pointer;
+}
+.token-help ol {
+  margin-bottom: 0;
+  padding-left: 20px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.token-help a {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+.photo-dropzone {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 7px;
+  border: 1px dashed #a7af96;
+  background: #eeeee3;
+  border-radius: 9px;
+  padding: 28px 16px;
+  cursor: pointer;
+  margin-top: 16px;
+  color: var(--green);
+}
+.photo-dropzone strong {
+  font-weight: 500;
+  font-size: 15px;
+}
+.photo-dropzone > span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.photo-dropzone input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.photo-dropzone:focus-within {
+  outline: 3px solid #547466;
+  outline-offset: 4px;
+}
+.photo-dropzone.disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.photo-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 22px;
+}
+.photo-edit-item {
+  min-width: 0;
+}
+.photo-edit-preview {
+  height: 145px;
+  position: relative;
+  border-radius: 7px;
+  overflow: hidden;
+  background: #e5e2d7;
+}
+.photo-edit-preview .museum-photo,
+.photo-edit-preview .photo-unavailable {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+.photo-state {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  font-size: 10px;
+  padding: 3px 7px;
+  border-radius: 4px;
+  background: #fffcf6e8;
+  color: #7b663f;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.photo-state.hosted {
+  color: var(--green);
+}
+.photo-remove {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #fffcf6e8;
+  display: grid;
+  place-items: center;
+}
+.photo-edit-item label {
+  font-size: 12px;
+  margin: 10px 0 6px;
+}
+.photo-edit-item input {
+  font-size: 13px;
+  padding: 8px 10px;
+  min-height: 39px;
+}
+.photo-edit-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3px;
+  margin-top: 5px;
+  color: var(--muted);
+}
+.photo-edit-controls > span {
+  font-size: 10px;
+}
+.photo-edit-controls > div {
+  display: flex;
+  gap: 2px;
+}
+.photo-edit-controls button {
+  min-height: 27px;
+  min-width: 27px;
+}
+.photo-gallery {
+  margin: 38px 0;
+  padding-top: 30px;
+  border-top: 1px solid var(--line);
+}
+.photo-gallery-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 18px;
+  gap: 12px;
+}
+.photo-gallery-heading h2 {
+  font-size: 25px;
+  margin-top: 8px;
+}
+.photo-gallery-heading .eyebrow {
+  font-size: 9px;
+}
+.photo-gallery-heading > span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.photo-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.photo-gallery-grid.single {
+  grid-template-columns: 1fr;
+}
+.photo-gallery-grid > button {
+  position: relative;
+  padding: 0;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ede9df;
+}
+.photo-gallery-grid .museum-photo {
+  aspect-ratio: 4/3;
+  height: auto;
+  width: 100%;
+  object-fit: cover;
+}
+.photo-gallery-grid.single .museum-photo {
+  aspect-ratio: auto;
+  max-height: 520px;
+  object-fit: contain;
+}
+.photo-caption {
+  display: block;
+  padding: 11px 13px;
+  font-size: 12px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.photo-expand {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 29px;
+  height: 29px;
+  background: #fffcf6d9;
+  border-radius: 5px;
+  color: #4c5d4d;
+}
+.modal:has(.photo-lightbox) {
+  width: min(1000px, calc(100% - 32px));
+}
+.photo-lightbox .museum-photo {
+  width: 100%;
+  height: auto;
+  max-height: 65dvh;
+  object-fit: contain;
+  background: #ebe8df;
+  border-radius: 7px;
+}
+.photo-lightbox > p {
+  margin: 14px 0;
+  text-align: center;
+  color: var(--muted);
+}
+.lightbox-controls {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+}
+.lightbox-controls > button {
+  font-size: 12px;
+}
+@media (max-width: 760px) {
+  .repository-status {
+    flex-wrap: wrap;
+    padding: 13px;
+  }
+  .repository-status > .secondary {
+    width: 100%;
+    margin-top: 6px;
+  }
+  .photo-edit-grid {
+    gap: 12px;
+  }
+  .photo-edit-preview {
+    height: 120px;
+  }
+  .photo-edit-controls {
+    flex-wrap: wrap;
+  }
+  .photo-edit-controls > div {
+    margin-left: auto;
+  }
+  .preview-scene .preview-photo {
+    height: 290px;
+  }
+  .photo-gallery-grid {
+    gap: 9px;
+  }
+  .lightbox-controls {
+    gap: 7px;
+  }
+  .lightbox-controls .secondary {
+    padding: 10px;
+    font-size: 11px;
+  }
+  .repository-fields {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .photo-dropzone {
+    padding: 23px 12px;
+  }
+  .photo-dropzone > span {
+    font-size: 11px;
+  }
+}
+
+/* 不同照片说明长度不应改变同一排照片的顶端位置。 */
+.photo-gallery-grid > button {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+}
