@@ -19,7 +19,7 @@ describe('备份恢复的边界', () => {
   });
   it('拒绝非法 JSON 和未知版本', () => {
     expect(() => parseBackup('{invalid')).toThrow('JSON');
-    expect(() => validateBackup({ ...sample(), schemaVersion: 2 })).toThrow('版本');
+    expect(() => validateBackup({ ...sample(), schemaVersion: 99 })).toThrow('版本');
   });
   it('拒绝重复 ID、无效精选引用和超额精选', () => {
     const sameUuid = sample();

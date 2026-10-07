@@ -20,7 +20,7 @@ describe('馆藏隔离与事务', () => {
   it('恢复数据无效时不覆盖已有馆藏', async () => {
     const original = await loadMuseum();
     await expect(
-      persistMuseum({ ...original.museum, schemaVersion: 2 } as never, {
+      persistMuseum({ ...original.museum, schemaVersion: 99 } as never, {
         mode: 'personal',
         initialized: true,
       }),
