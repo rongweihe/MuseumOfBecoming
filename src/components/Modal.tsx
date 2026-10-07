@@ -1,4 +1,5 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useId, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 export function Modal({
   title,
@@ -12,17 +13,22 @@ export function Modal({
   wide?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
   useEffect(() => {
     const previous = document.activeElement as HTMLElement;
+    const fallback = previous?.closest<HTMLElement>('[data-focus-return]');
     const dialog = ref.current!;
     dialog.showModal();
     // 原生 dialog 限制焦点在弹窗内，关闭后回到原触发按钮，键盘流程不会丢失。
     return () => {
       dialog.close();
-      previous?.focus();
+      // 连接成功时原按钮会替换成“断开”，返回稳定容器内的新按钮，避免跳到页首。
+      if (previous?.isConnected) previous.focus();
+      else fallback?.querySelector<HTMLElement>('button')?.focus();
     };
   }, []);
-  return (
+  // 对话框挂到 body，避免仓库连接表单嵌套在收藏表单内。
+  return createPortal(
     <dialog
       ref={ref}
       className={`modal ${wide ? 'wide' : ''}`}
@@ -48,15 +54,16 @@ export function Modal({
           first?.focus();
         }
       }}
-      aria-labelledby="modal-title"
+      aria-labelledby={titleId}
     >
       <div className="modal-head">
-        <h2 id="modal-title">{title}</h2>
+        <h2 id={titleId}>{title}</h2>
         <button className="icon-button" aria-label="关闭对话框" onClick={onClose}>
           <X size={20} />
         </button>
       </div>
       {children}
-    </dialog>
+    </dialog>,
+    document.body,
   );
 }
