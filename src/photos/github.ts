@@ -6,33 +6,28 @@ import {
   type PendingPhoto,
   type HostedPhoto,
 } from './model';
-export class GitHubError extends Error {
-  constructor(
-    message: string,
-    public status = 0,
-  ) {
-    super(message);
-  }
-}
-function statusMessage(status: number) {
-  if (status === 401) return 'GitHub 连接已失效，请重新连接有效令牌。';
-  if (status === 403 || status === 429)
-    return 'GitHub 拒绝了请求：请检查 Contents 写入权限、分支规则，或稍后重试。';
-  if (status === 404) return '找不到仓库或分支，请检查名称，以及令牌是否允许访问该仓库。';
-  if (status === 409 || status === 422)
-    return '仓库写入发生冲突，请确认分支允许直接提交，然后重试。';
-  return 'GitHub 暂时无法完成请求，图片和输入已保留，请稍后重试。';
-}
+import { GitHubError, diagnoseGitHubError, githubOperation } from './errors';
+export { GitHubError } from './errors';
 export class GitHubPhotoClient {
   // 凭证只驻留实例内存；不会被序列化进 IndexedDB、备份、日志或构建文件。
   #token = '';
   #repository?: Repository;
   #queue: Promise<unknown> = Promise.resolve();
+  #retryAt = 0;
   disconnect() {
     this.#token = '';
     this.#repository = undefined;
   }
   async #request(path: string, token: string, init: RequestInit = {}) {
+    if (Date.now() < this.#retryAt)
+      throw new GitHubError(
+        `GitHub 请求仍处于限流等待期，请约 ${Math.ceil((this.#retryAt - Date.now()) / 1000)} 秒后重试。`,
+        429,
+        'rate-limit',
+        githubOperation(path, init.method),
+        undefined,
+        this.#retryAt,
+      );
     let res: Response;
     try {
       res = await fetch(`https://api.github.com${path}`, {
@@ -50,7 +45,18 @@ export class GitHubPhotoClient {
     } catch {
       throw new GitHubError('无法连接 GitHub。请检查网络后重试；已经上传的图片不会重复覆盖。');
     }
-    if (!res.ok) throw new GitHubError(statusMessage(res.status), res.status);
+    if (!res.ok) {
+      const payload: unknown = await res.json().catch(() => ({}));
+      const error = diagnoseGitHubError(
+        res.status,
+        res.headers,
+        payload,
+        githubOperation(path, init.method),
+      );
+      // 不自动重试限流；保留冷却截止时间，连续点击也不会继续消耗 API 配额。
+      if (error.retryAt) this.#retryAt = error.retryAt;
+      throw error;
+    }
     return res.json();
   }
   async connect(repository: Repository, token: string) {
@@ -61,7 +67,7 @@ export class GitHubPhotoClient {
     const data = await this.#request(base, secret);
     if (data.private !== false || data.visibility === 'private')
       throw new Error('请选择公开仓库。私人仓库的图片不能作为无需登录的公开图片展示。');
-    if (data.archived || data.permissions?.push !== true)
+    if (data.archived || data.permissions?.push === false)
       throw new Error('当前账号没有此仓库的写入权限，或仓库已归档。');
     await this.#request(`${base}/branches/${encodeURIComponent(config.branch)}`, secret);
     this.#token = secret;
@@ -147,7 +153,7 @@ export class GitHubPhotoClient {
           throw new Error('GitHub 返回的图片校验不一致，请重试核对。');
         return finish(result.commit?.sha);
       } catch (error) {
-        if (attempt === 1 || !(error instanceof GitHubError) || ![409, 422].includes(error.status))
+        if (attempt === 1 || !(error instanceof GitHubError) || error.reason !== 'conflict')
           throw error;
       }
     }

@@ -94,7 +94,7 @@ export function RepositoryConnection({ compact = false }: { compact?: boolean })
           </strong>
           <small>
             {hosting.connected
-              ? `${hosting.repository.branch} · 本次页面已连接`
+              ? `${hosting.repository.branch} · 已验证访问，上传时确认写入`
               : '选好照片后，保存前连接即可'}
           </small>
         </div>
@@ -193,7 +193,8 @@ export function RepositoryConnection({ compact = false }: { compact?: boolean })
                   </li>
                   <li>Repository access 选择 Only select repositories，只选上面填写的仓库。</li>
                   <li>
-                    Repository permissions 将 Contents 设为 Read and write，其他权限保持默认。
+                    Repository permissions 将 Contents 设为 Read and write；必须是 Read and
+                    write，不能仅选 Read-only。
                   </li>
                   <li>生成后粘贴到下面。无需给 Workflows 写入权限。</li>
                 </ol>
@@ -212,7 +213,8 @@ export function RepositoryConnection({ compact = false }: { compact?: boolean })
               />
               <p id="token-note" className="photo-fineprint">
                 令牌仅发送到
-                api.github.com，不进入本地持久化、备份或仓库。仓库需允许向所选分支直接提交。
+                api.github.com，不进入本地持久化、备份或仓库。仓库访问验证不等于写入授权，上传还需要
+                Contents 写入权限。
               </p>
               <label className="check-label">
                 <input type="checkbox" required />

@@ -124,3 +124,43 @@ describe('图片上传与恢复', () => {
     expect(imagePath(exhibitId, photo.hash)).toMatch(/\.webp$/);
   });
 });
+
+describe('GitHub 权限与限流的真实响应行为', () => {
+  it('只读 token 可以连接，但上传时报明确的写入权限错误', async () => {
+    const { photo } = await mockGitHub();
+    const fetchOriginal = globalThis.fetch;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+        if (init?.method === 'PUT')
+          return Response.json(
+            { message: 'Resource not accessible by personal access token' },
+            { status: 403 },
+          );
+        return fetchOriginal(input, init);
+      }),
+    );
+    const client = new GitHubPhotoClient();
+    await client.connect(defaultRepository, 'test-token');
+    await expect(client.upload(photo, exhibitId)).rejects.toMatchObject({
+      status: 403,
+      reason: 'permissions',
+      operation: 'upload-photo',
+    });
+  });
+  it('限流后连续点击不继续发网络请求', async () => {
+    const { photo } = await mockGitHub();
+    const client = new GitHubPhotoClient();
+    await client.connect(defaultRepository, 'test-token');
+    const fetch = vi.fn(async () =>
+      Response.json(
+        { message: 'API rate limit exceeded' },
+        { status: 403, headers: { 'retry-after': '60', 'x-ratelimit-remaining': '0' } },
+      ),
+    );
+    vi.stubGlobal('fetch', fetch);
+    await expect(client.upload(photo, exhibitId)).rejects.toMatchObject({ reason: 'rate-limit' });
+    await expect(client.upload(photo, exhibitId)).rejects.toThrow('等待期');
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+});
